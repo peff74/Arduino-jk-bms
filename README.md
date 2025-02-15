@@ -1,4 +1,4 @@
-# JK-BMS with NimBLE for Arduino
+# Arduino script with NimBLE to monitor JK-BMS 
 
 This project is a modified version of [syssi/esphome-jk-bms](https://github.com/syssi/esphome-jk-bms/), rewritten for Arduino using NimBLE.
 
