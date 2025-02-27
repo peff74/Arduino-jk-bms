@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>JKBMS Monitoring</title>
+		<meta charset="UTF-8"> <!-- Ensure UTF-8 encoding for special characters -->
+		<link rel="stylesheet" href="/style.css">
+		<script>
+			// Global variables to store data
+			let bmsData = {};
+			let sketchInfo = {};
+			let freeHeap = "";
+			let uptime = { seconds: 0, formatted: "" };
+			
+			// Function to send a command to the ESP
+			async function sendCommand(mac, action, state) {
+				try {
+					const response = await fetch('/control', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							mac: mac,
+							action: action,
+							state: state,
+						}),
+					});
+					
+					if (response.ok) {
+						console.log(`Command sent: ${action} ${state} for ${mac}`);
+						} else {
+						console.error('Failed to send command');
+					}
+					} catch (error) {
+					console.error('Error sending command:', error);
+				}
+			}
+			
+			// Function to fetch sketch information
+			async function fetchSketchInfo() {
+				try {
+					const response = await fetch('/sketchinfo');
+					sketchInfo = await response.json();
+					updateSketchInfo();
+					} catch (error) {
+					console.error('Error fetching sketch info:', error);
+				}
+			}
+			
+			// Function to fetch free heap information
+			async function fetchFreeHeap() {
+				try {
+					const response = await fetch('/freeheap');
+					const data = await response.json();
+					freeHeap = data.free_heap;
+					updateFreeHeap();
+					} catch (error) {
+					console.error('Error fetching free heap:', error);
+				}
+			}
+			
+			// Function to fetch uptime information
+			async function fetchUptime() {
+				try {
+					const response = await fetch('/uptime');
+					const data = await response.json();
+					uptime.seconds = data.uptime_seconds; // Als Zahl empfangen
+					uptime.formatted = data.uptime_formatted;
+					updateUptime();
+					} catch (error) {
+					console.error('Error fetching uptime:', error);
+				}
+			}
+			
+			// Function to update sketch information on the page
+			function updateSketchInfo() {
+				updateElement('sketch-name', sketchInfo.sketch_name);
+				updateElement('compile-date', sketchInfo.compile_date);
+				updateElement('compile-time', sketchInfo.compile_time);
+				updateElement('esp-core-version', sketchInfo.esp_core_version);
+			}
+			
+			// Function to update free heap information on the page
+			function updateFreeHeap() {
+				updateElement('free-heap', `Free Heap: ${freeHeap}`);
+			}
+			
+			// Function to update uptime information on the page
+			function updateUptime() {
+				updateElement('uptime', `Uptime: ${uptime.formatted}`);
+			}
+			
+			// Function to fetch data from the server
+			async function fetchData() {
+				try {
+					const response = await fetch('/data');
+					bmsData = await response.json();
+					updatePage();
+					} catch (error) {
+					console.error('Error fetching data:', error);
+				}
+			}
+			
+			// Function to update the page with new data
+			function updatePage() {
+				for (const [mac, device] of Object.entries(bmsData)) {
+					// General information
+					updateElement(`${mac}-battery-voltage`, `${device.battery_voltage.toFixed(2)} V`);
+					updateElement(`${mac}-battery-power`, `${device.battery_power.toFixed(2)} W`);
+					updateElement(`${mac}-charge-current`, `${device.charge_current.toFixed(2)} A`);
+					updateElement(`${mac}-percent-remain`, `${device.percent_remain} %`);
+					updateElement(`${mac}-capacity-remain`, `${device.capacity_remain.toFixed(2)} Ah`);
+					updateElement(`${mac}-nominal-capacity`, `${device.nominal_capacity.toFixed(2)} Ah`);
+					updateElement(`${mac}-cycle-count`, `${device.cycle_count}`);
+					updateElement(`${mac}-cycle-capacity`, `${device.cycle_capacity.toFixed(2)} Ah`);
+					updateElement(`${mac}-uptime`, `${device.uptime}`);
+					
+					// Temperatures
+					updateElement(`${mac}-battery-t1`, `${device.battery_t1.toFixed(1)} °C`);
+					updateElement(`${mac}-battery-t2`, `${device.battery_t2.toFixed(1)} °C`);
+					updateElement(`${mac}-mos-temp`, `${device.mos_temp.toFixed(1)} °C`);
+					
+					// Cell voltages
+					for (let j = 0; j < device.cell_voltages.length; j++) {
+						updateElement(`${mac}-cell-${j + 1}`, `${device.cell_voltages[j].toFixed(3)} V`);
+					}
+					updateElement(`${mac}-average-cell-voltage`, `${device.average_cell_voltage.toFixed(3)} V`);
+					updateElement(`${mac}-delta-cell-voltage`, `${device.delta_cell_voltage.toFixed(3)} V`);
+					
+					// Wire resistances
+					for (let j = 0; j < device.wire_resist.length; j++) {
+						updateElement(`${mac}-wire-resist-${j + 1}`, `${device.wire_resist[j].toFixed(3)} Ω`);
+					}
+					
+					// Status flags
+					updateElement(`${mac}-charge`, `${device.charge ? 'Active' : 'Inactive'}`);
+					updateElement(`${mac}-discharge`, `${device.discharge ? 'Active' : 'Inactive'}`);
+					updateElement(`${mac}-balance`, `${device.balance ? 'Active' : 'Inactive'}`);
+					updateElement(`${mac}-balancing-action`, `${device.balancing_action}`);
+					updateElement(`${mac}-balance-curr`, `${device.balance_curr.toFixed(3)} A`);
+					
+					// BMS settings
+					updateElement(`${mac}-cell-count`, `${device.cell_count}`);
+					updateElement(`${mac}-total-battery-capacity`, `${device.total_battery_capacity.toFixed(2)} Ah`);
+					updateElement(`${mac}-balance-trigger-voltage`, `${device.balance_trigger_voltage.toFixed(3)} V`);
+					updateElement(`${mac}-balance-starting-voltage`, `${device.balance_starting_voltage.toFixed(3)} V`);
+					updateElement(`${mac}-max-charge-current`, `${device.max_charge_current.toFixed(2)} A`);
+					updateElement(`${mac}-max-discharge-current`, `${device.max_discharge_current.toFixed(2)} A`);
+					updateElement(`${mac}-max-balance-current`, `${device.max_balance_current.toFixed(2)} A`);
+					updateElement(`${mac}-cell-undervoltage-protection`, `${device.cell_undervoltage_protection.toFixed(3)} V`);
+					updateElement(`${mac}-cell-undervoltage-recovery`, `${device.cell_undervoltage_recovery.toFixed(3)} V`);
+					updateElement(`${mac}-cell-overvoltage-protection`, `${device.cell_overvoltage_protection.toFixed(3)} V`);
+					updateElement(`${mac}-cell-overvoltage-recovery`, `${device.cell_overvoltage_recovery.toFixed(3)} V`);
+					updateElement(`${mac}-power-off-voltage`, `${device.power_off_voltage.toFixed(3)} V`);
+					updateElement(`${mac}-charge-overcurrent-protection-delay`, `${device.charge_overcurrent_protection_delay} s`);
+					updateElement(`${mac}-charge-overcurrent-protection-recovery-time`, `${device.charge_overcurrent_protection_recovery_time} s`);
+					updateElement(`${mac}-discharge-overcurrent-protection-delay`, `${device.discharge_overcurrent_protection_delay} s`);
+					updateElement(`${mac}-discharge-overcurrent-protection-recovery-time`, `${device.discharge_overcurrent_protection_recovery_time} s`);
+					updateElement(`${mac}-short-circuit-protection-recovery-time`, `${device.short_circuit_protection_recovery_time} s`);
+					updateElement(`${mac}-charge-overtemperature-protection`, `${device.charge_overtemperature_protection.toFixed(1)} °C`);
+					updateElement(`${mac}-charge-overtemperature-protection-recovery`, `${device.charge_overtemperature_protection_recovery.toFixed(1)} °C`);
+					updateElement(`${mac}-discharge-overtemperature-protection`, `${device.discharge_overtemperature_protection.toFixed(1)} °C`);
+					updateElement(`${mac}-discharge-overtemperature-protection-recovery`, `${device.discharge_overtemperature_protection_recovery.toFixed(1)} °C`);
+					updateElement(`${mac}-charge-undertemperature-protection`, `${device.charge_undertemperature_protection.toFixed(1)} °C`);
+					updateElement(`${mac}-charge-undertemperature-protection-recovery`, `${device.charge_undertemperature_protection_recovery.toFixed(1)} °C`);
+					updateElement(`${mac}-power-tube-overtemperature-protection`, `${device.power_tube_overtemperature_protection.toFixed(1)} °C`);
+					updateElement(`${mac}-power-tube-overtemperature-protection-recovery`, `${device.power_tube_overtemperature_protection_recovery.toFixed(1)} °C`);
+					updateElement(`${mac}-short-circuit-protection-delay`, `${device.short_circuit_protection_delay} µs`);
+				}
+			}
+			
+			// Helper function to update a DOM element
+			function updateElement(id, value) {
+				const element = document.getElementById(id);
+				if (element) {
+					element.textContent = value;
+				}
+			}
+			
+			// Function to create the initial page structure
+			function createPage() {
+				const contentDiv = document.getElementById('content');
+				contentDiv.innerHTML = '';  // Clear old content
+				
+				// Add BMS data sections (as before)
+				for (const [mac, device] of Object.entries(bmsData)) {
+					const deviceSection = document.createElement('div');
+					deviceSection.className = 'device-section';
+					deviceSection.innerHTML = `
+					<div class="device-section">
+				<h2>BMS: ${mac}</h2>
+				
+				<h3>General Information</h3>
+				<table>
+					<tr><th>Parameter</th><th>Value</th></tr>
+					<tr><td>Battery Voltage</td><td id="${mac}-battery-voltage">${device.battery_voltage.toFixed(2)} V</td></tr>
+					<tr><td>Battery Power</td><td id="${mac}-battery-power">${device.battery_power.toFixed(2)} W</td></tr>
+					<tr><td>Charge Current</td><td id="${mac}-charge-current">${device.charge_current.toFixed(2)} A</td></tr>
+					<tr><td>State of Charge</td><td id="${mac}-percent-remain">${device.percent_remain} %</td></tr>
+					<tr><td>Capacity Remain</td><td id="${mac}-capacity-remain">${device.capacity_remain.toFixed(2)} Ah</td></tr>
+					<tr><td>Nominal Capacity</td><td id="${mac}-nominal-capacity">${device.nominal_capacity.toFixed(2)} Ah</td></tr>
+					<tr><td>Cycle Count</td><td id="${mac}-cycle-count">${device.cycle_count}</td></tr>
+					<tr><td>Cycle Capacity</td><td id="${mac}-cycle-capacity">${device.cycle_capacity.toFixed(2)} Ah</td></tr>
+					<tr><td>Uptime</td><td id="${mac}-uptime">${device.uptime}</td></tr>
+				</table>
+				
+				<h3>Temperatures</h3>
+				<table>
+					<tr><th>Parameter</th><th>Value</th></tr>
+					<tr><td>Battery T1</td><td id="${mac}-battery-t1">${device.battery_t1.toFixed(1)} °C</td></tr>
+					<tr><td>Battery T2</td><td id="${mac}-battery-t2">${device.battery_t2.toFixed(1)} °C</td></tr>
+					<tr><td>MOS Temperature</td><td id="${mac}-mos-temp">${device.mos_temp.toFixed(1)} °C</td></tr>
+				</table>
+				
+				<h3>Cell Voltages</h3>
+				<table>
+					<tr><th>Cell</th><th>Voltage</th></tr>
+					${device.cell_voltages.map((voltage, index) => `
+					<tr><td>Cell ${index + 1}</td><td id="${mac}-cell-${index + 1}">${voltage.toFixed(3)} V</td></tr>
+					`).join('')}
+					<tr><td>Average Cell Voltage</td><td id="${mac}-average-cell-voltage">${device.average_cell_voltage.toFixed(3)} V</td></tr>
+					<tr><td>Delta Cell Voltage</td><td id="${mac}-delta-cell-voltage">${device.delta_cell_voltage.toFixed(3)} V</td></tr>
+				</table>
+				
+				<h3>Wire Resistances</h3>
+				<table>
+					<tr><th>Cell</th><th>Resistance</th></tr>
+					${device.wire_resist.map((resist, index) => `
+					<tr><td>Cell ${index + 1}</td><td id="${mac}-wire-resist-${index + 1}">${resist.toFixed(3)} Ω</td></tr>
+					`).join('')}
+				</table>
+				
+				<h3>Status Flags</h3>
+				<table>
+					<tr><th>Parameter</th><th>Value</th></tr>
+					<tr><td>Charge</td><td id="${mac}-charge">${device.charge ? 'Active' : 'Inactive'}</td></tr>
+					<tr><td>Discharge</td><td id="${mac}-discharge">${device.discharge ? 'Active' : 'Inactive'}</td></tr>
+					<tr><td>Balance</td><td id="${mac}-balance">${device.balance ? 'Active' : 'Inactive'}</td></tr>
+					<tr><td>Balancing Action</td><td id="${mac}-balancing-action">${device.balancing_action}</td></tr>
+					<tr><td>Balance Current</td><td id="${mac}-balance-curr">${device.balance_curr.toFixed(3)} A</td></tr>
+				</table>
+				
+				<div class="switches">
+					<h3>Control</h3>
+					<div>
+						<label>Charging:</label>
+						<button id="${mac}-charging-on" onclick="sendCommand('${mac}', 'charging', 'on')">ON</button>
+						<button id="${mac}-charging-off" onclick="sendCommand('${mac}', 'charging', 'off')">OFF</button>
+					</div>
+					<div>
+						<label>Discharging:</label>
+						<button id="${mac}-discharging-on" onclick="sendCommand('${mac}', 'discharging', 'on')">ON</button>
+						<button id="${mac}-discharging-off" onclick="sendCommand('${mac}', 'discharging', 'off')">OFF</button>
+					</div>
+					<div>
+						<label>Balancing:</label>
+						<button id="${mac}-balancing-on" onclick="sendCommand('${mac}', 'balancing', 'on')">ON</button>
+						<button id="${mac}-balancing-off" onclick="sendCommand('${mac}', 'balancing', 'off')">OFF</button>
+					</div>
+				</div>
+			</div>
+			
+			<h3>BMS Settings</h3>
+			<table>
+				<tr><th>Parameter</th><th>Value</th></tr>
+				<tr><td>Cell Count</td><td id="${mac}-cell-count">${device.cell_count}</td></tr>
+				<tr><td>Total Battery Capacity</td><td id="${mac}-total-battery-capacity">${device.total_battery_capacity.toFixed(2)} Ah</td></tr>
+				<tr><td>Balance Trigger Voltage</td><td id="${mac}-balance-trigger-voltage">${device.balance_trigger_voltage.toFixed(3)} V</td></tr>
+				<tr><td>Balance Starting Voltage</td><td id="${mac}-balance-starting-voltage">${device.balance_starting_voltage.toFixed(3)} V</td></tr>
+				<tr><td>Max Charge Current</td><td id="${mac}-max-charge-current">${device.max_charge_current.toFixed(2)} A</td></tr>
+				<tr><td>Max Discharge Current</td><td id="${mac}-max-discharge-current">${device.max_discharge_current.toFixed(2)} A</td></tr>
+				<tr><td>Max Balance Current</td><td id="${mac}-max-balance-current">${device.max_balance_current.toFixed(2)} A</td></tr>
+				<tr><td>Cell Undervoltage Protection</td><td id="${mac}-cell-undervoltage-protection">${device.cell_undervoltage_protection.toFixed(3)} V</td></tr>
+				<tr><td>Cell Undervoltage Recovery</td><td id="${mac}-cell-undervoltage-recovery">${device.cell_undervoltage_recovery.toFixed(3)} V</td></tr>
+				<tr><td>Cell Overvoltage Protection</td><td id="${mac}-cell-overvoltage-protection">${device.cell_overvoltage_protection.toFixed(3)} V</td></tr>
+				<tr><td>Cell Overvoltage Recovery</td><td id="${mac}-cell-overvoltage-recovery">${device.cell_overvoltage_recovery.toFixed(3)} V</td></tr>
+				<tr><td>Power Off Voltage</td><td id="${mac}-power-off-voltage">${device.power_off_voltage.toFixed(3)} V</td></tr>
+				<tr><td>Charge Overcurrent Protection Delay</td><td id="${mac}-charge-overcurrent-protection-delay">${device.charge_overcurrent_protection_delay} s</td></tr>
+				<tr><td>Charge Overcurrent Protection Recovery Time</td><td id="${mac}-charge-overcurrent-protection-recovery-time">${device.charge_overcurrent_protection_recovery_time} s</td></tr>
+				<tr><td>Discharge Overcurrent Protection Delay</td><td id="${mac}-discharge-overcurrent-protection-delay">${device.discharge_overcurrent_protection_delay} s</td></tr>
+				<tr><td>Discharge Overcurrent Protection Recovery Time</td><td id="${mac}-discharge-overcurrent-protection-recovery-time">${device.discharge_overcurrent_protection_recovery_time} s</td></tr>
+				<tr><td>Short Circuit Protection Recovery Time</td><td id="${mac}-short-circuit-protection-recovery-time">${device.short_circuit_protection_recovery_time} s</td></tr>
+				<tr><td>Charge Overtemperature Protection</td><td id="${mac}-charge-overtemperature-protection">${device.charge_overtemperature_protection.toFixed(1)} °C</td></tr>
+				<tr><td>Charge Overtemperature Protection Recovery</td><td id="${mac}-charge-overtemperature-protection-recovery">${device.charge_overtemperature_protection_recovery.toFixed(1)} °C</td></tr>
+				<tr><td>Discharge Overtemperature Protection</td><td id="${mac}-discharge-overtemperature-protection">${device.discharge_overtemperature_protection.toFixed(1)} °C</td></tr>
+				<tr><td>Discharge Overtemperature Protection Recovery</td><td id="${mac}-discharge-overtemperature-protection-recovery">${device.discharge_overtemperature_protection_recovery.toFixed(1)} °C</td></tr>
+				<tr><td>Charge Undertemperature Protection</td><td id="${mac}-charge-undertemperature-protection">${device.charge_undertemperature_protection.toFixed(1)} °C</td></tr>
+				<tr><td>Charge Undertemperature Protection Recovery</td><td id="${mac}-charge-undertemperature-protection-recovery">${device.charge_undertemperature_protection_recovery.toFixed(1)} °C</td></tr>
+				<tr><td>Power Tube Overtemperature Protection</td><td id="${mac}-power-tube-overtemperature-protection">${device.power_tube_overtemperature_protection.toFixed(1)} °C</td></tr>
+				<tr><td>Power Tube Overtemperature Protection Recovery</td><td id="${mac}-power-tube-overtemperature-protection-recovery">${device.power_tube_overtemperature_protection_recovery.toFixed(1)} °C</td></tr>
+				<tr><td>Short Circuit Protection Delay</td><td id="${mac}-short-circuit-protection-delay">${device.short_circuit_protection_delay} µs</td></tr>
+			</table>
+			`;
+			contentDiv.appendChild(deviceSection);
+			}
+			
+			// Add sketch information section
+			const sketchInfoSection = document.createElement('div');
+			sketchInfoSection.className = 'sketch-info-section';
+			sketchInfoSection.innerHTML = `
+			<h3>Sketch Information</h3>
+			<table>
+				<tr><th>Parameter</th><th>Value</th></tr>
+				<tr><td>Sketch Name</td><td id="sketch-name">${sketchInfo.sketch_name}</td></tr>
+				<tr><td>Compile Date</td><td id="compile-date">${sketchInfo.compile_date}</td></tr>
+				<tr><td>Compile Time</td><td id="compile-time">${sketchInfo.compile_time}</td></tr>
+				<tr><td>ESP Core Version</td><td id="esp-core-version">${sketchInfo.esp_core_version}</td></tr>
+			</table>
+			`;
+			contentDiv.appendChild(sketchInfoSection);
+			
+			// Add free heap and uptime information at the bottom
+			const systemInfoSection = document.createElement('div');
+			systemInfoSection.id = 'system-info-section';
+			systemInfoSection.innerHTML = `
+			<p id="free-heap">Free Heap: ${freeHeap}</p>
+			<p id="uptime">Uptime: ${uptime.formatted}</p>
+			`;
+			contentDiv.appendChild(systemInfoSection);
+			}
+			
+			// Initialize the page and start fetching data
+			async function initialize() {
+			await fetchSketchInfo();  // Fetch sketch info once
+			await fetchData();        // Fetch initial BMS data
+			await fetchFreeHeap();    // Fetch initial free heap data
+			await fetchUptime();      // Fetch initial uptime data
+			createPage();             // Create the page structure
+			setInterval(fetchData, 5000);  // Update BMS data every 5 seconds
+			setInterval(fetchFreeHeap, 1000);  // Update free heap every 1 second
+			setInterval(fetchUptime, 1000);  // Update uptime every 1 second
+			}
+			
+			// Start the process
+			initialize();
+		</script>
+	</head>
+	<body>
+		<h1>JKBMS Status</h1>
+		<div id="content"></div>
+	</body>
+</html>				
