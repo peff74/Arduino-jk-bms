@@ -2,14 +2,36 @@
 
 This project is a modified version of [syssi/esphome-jk-bms](https://github.com/syssi/esphome-jk-bms/), rewritten for Arduino using NimBLE.
 
-## Status
-This is an initial attempt, and it already outputs data via the serial interface of an ESP32.
-
 ## Features
-- Usefull for Arduino users
-- Uses NimBLE for Bluetooth communication
-- Runs on ESP32
-- Outputs data via serial interface
+*   **Real-time Monitoring**:
+    
+    *   Battery voltage, current, state of charge, and more.
+        
+    *   Cell voltages and temperatures.
+        
+    *   BMS settings and status flags.
+        
+*   **Control**:
+    
+    *   Turn **Charging**, **Discharging**, and **Balancing** ON/OFF for each BMS.
+        
+*   **System Information**:
+    
+    *   Uptime (in seconds and formatted as days, hours, minutes, seconds).
+        
+    *   Free heap memory (in bytes, KB, or MB).
+        
+    *   Sketch information (name, compile date, ESP core version).
+        
+*   **Multi-BMS Support**:
+    
+    *   Monitor and control multiple BMS devices simultaneously.
+        
+*   **Web Interface**:
+    
+    *   Simple and responsive web interface with a black background and green text.
+        
+    *   Automatic refresh of data every 5 seconds.
 
 ## Disclaimer
 This is an experimental project. Use it at your own risk.
