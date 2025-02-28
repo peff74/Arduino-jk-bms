@@ -6,23 +6,25 @@ Usefull for v11 BMS
 ## Features
 *   **Real-time Monitoring**:
     
-    *   Battery voltage, current, state of charge, and more.
+    *   All data that are also available via the app
         
-    *   Cell voltages and temperatures.
+    *   Cell voltages, resistances, temperatures, battery voltage, current, state of charge and more
         
     *   BMS settings and status flags.
         
 *   **Control**:
     
     *   Turn **Charging**, **Discharging**, and **Balancing** ON/OFF for each BMS.
+ 
+    *   I plan to add more.
         
 *   **System Information**:
     
-    *   Uptime (in seconds and formatted as days, hours, minutes, seconds).
+    *   Uptime 
         
-    *   Free heap memory (in bytes, KB, or MB).
+    *   Free heap memory 
         
-    *   Sketch information (name, compile date, ESP core version).
+    *   Sketch information 
         
 *   **Multi-BMS Support**:
     
@@ -30,9 +32,11 @@ Usefull for v11 BMS
         
 *   **Web Interface**:
     
-    *   Simple and responsive web interface with a black background and green text.
+    *   Simple but not pretty web interface with all data and some switches.
+ 
+    *   A small file manager is included to handle web server files
         
-    *   Automatic refresh of data every 5 seconds.
+    *   Automatic refresh 
 
 
 Installation
@@ -44,11 +48,13 @@ Installation
     
 *   **Open the Project in Arduino IDE**:
     
-    *   Open the deep\_seek\_4.ino file in the Arduino IDE.
+    *   Open the jk-bms.ino file in the Arduino IDE.
         
 *   **Install Required Libraries**:
     
     *   Install the libraries NimBLEDevice + ArduinoJson
+ 
+    *   All others are included in the IDE by default
  
 *   **Edit settings**:
 
@@ -64,13 +70,21 @@ Installation
         
 *   **Access the Web Interface**:
     
-    *   After uploading, the ESP32 will connect to your existing Wi-Fi network IP is shown in serial monitor
+    *   After the upload, the ESP32 will connect to your Wi-Fi and the IP will be displayed in the serial monitor.
         
     *   Open a web browser and navigate to the IP address of the ESP32.
  
-    *   Use http://IP/fs to upload index.html + style.css to the ESP32
+    *   A small error message appears that no Index.html was found
+ 
+    *   Follow the link or use http://IP/fs to upload index.html + style.css to the ESP32
  
 ## Examples
+
+   *   Serial interface
+
+<details>
+<summary>📁 Click to show</summary>
+
 ```
 rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
 configsip: 0, SPIWP:0xee
@@ -270,6 +284,11 @@ Ignoring notification. Remaining: 3
 Notification received...
 Handling notification...
 ```
+</details>
+
+
+ *   Web interface
+
 ![Exampel](https://github.com/peff74/Arduino-jk-bms/blob/main/jkbms_website.png)
 
 ## Disclaimer
